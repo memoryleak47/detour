@@ -2,6 +2,11 @@ use egg::*;
 
 struct DetourCost;
 
+struct DetourScheduler;
+
+impl<L: Language> RewriteScheduler<L, DetourCost> for DetourScheduler {
+}
+
 impl<L: Language> Analysis<L> for DetourCost {
     type Data = (/*Cost*/usize, /*Ctxt Cost*/usize);
 
@@ -39,6 +44,7 @@ fn main() {
     let r: Runner<Math, DetourCost> =
         Runner::new(DetourCost)
             .with_expr(&st)
+            .with_scheduler(DetourScheduler)
             .run(&rules());
     let ex = Extractor::new(&r.egraph, AstSize);
     println!("{}", ex.find_best(r.roots[0]).1);
