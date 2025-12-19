@@ -43,25 +43,35 @@ impl<L: Language> Analysis<L> for DetourAnalysis {
 define_language! {
     pub enum Math {
         "+" = Add([Id; 2]),
-        "-" = Sub([Id; 2]),
+        "-" = Sub([Id; 1]),
         "*" = Mul([Id; 2]),
-        "/" = Div([Id; 2]),
+        "/" = Div([Id; 1]),
         Symbol(Symbol),
     }
 }
 
 fn rules() -> Vec<Rewrite<Math, DetourAnalysis>> {
     vec![
-        rewrite!("cancel"; "(- ?a ?a)" => "z"),
+        rewrite!("neg_cancel"; "(+ ?a (- ?a))" => "zero"),
+        rewrite!("div_cancel"; "(* ?a (/ ?a))" => "one"),
+
+        rewrite!("plus_zero"; "(+ ?a zero)" => "?a"),
+        rewrite!("mul_zero"; "(* ?a zero)" => "zero"),
+        rewrite!("mul_one"; "(* ?a one)" => "?a"),
+
+        rewrite!("comm+"; "(+ ?a ?b)" => "(+ ?b ?a)"),
+        rewrite!("comm*"; "(* ?a ?b)" => "(* ?b ?a)"),
+
         rewrite!("assoc-i"; "(+ (+ ?a ?b) ?c)" => "(+ ?a (+ ?b ?c))"),
         rewrite!("assoc-ii"; "(+ ?a (+ ?b ?c))" => "(+ (+ ?a ?b) ?c)"),
+
         rewrite!("distr-i"; "(* ?a (+ ?b ?c))" => "(+ (* ?a ?b) (* ?a ?c))"),
         rewrite!("distr-ii"; "(+ (* ?a ?b) (* ?a ?c))" => "(* ?a (+ ?b ?c))"),
     ]
 }
 
 fn main() {
-    let st = "(+ a (- b b))".parse().unwrap();
+    let st = "(+ (+ b a) (- b))".parse().unwrap();
     let r: Runner<Math, DetourAnalysis> =
         Runner::new(DetourAnalysis)
             .with_expr(&st)
