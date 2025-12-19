@@ -1,10 +1,12 @@
 use egg::*;
-
 struct DetourCost;
 
 struct DetourScheduler;
 
 impl<L: Language> RewriteScheduler<L, DetourCost> for DetourScheduler {
+    fn search_rewrite<'a>(&mut self, it: usize, eg: &EGraph<L, DetourCost>, rw: &'a Rewrite<L, DetourCost>) -> Vec<SearchMatches<'a, L>> {
+        rw.search(eg)
+    }
 }
 
 impl<L: Language> Analysis<L> for DetourCost {
