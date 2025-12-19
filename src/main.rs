@@ -1,15 +1,32 @@
 use egg::*;
-struct DetourCost;
+
+struct DetourAnalysis;
 
 struct DetourScheduler;
 
-impl<L: Language> RewriteScheduler<L, DetourCost> for DetourScheduler {
-    fn search_rewrite<'a>(&mut self, it: usize, eg: &EGraph<L, DetourCost>, rw: &'a Rewrite<L, DetourCost>) -> Vec<SearchMatches<'a, L>> {
-        rw.search(eg)
+impl<L: Language> RewriteScheduler<L, DetourAnalysis> for DetourScheduler {
+    fn search_rewrite<'a>(&mut self, it: usize, eg: &EGraph<L, DetourAnalysis>, rw: &'a Rewrite<L, DetourAnalysis>) -> Vec<SearchMatches<'a, L>> {
+        let mut out = Vec::new();
+        let mut threshold = usize::MAX;
+        for e in eg.classes() {
+            let c = e.data;
+            let detour_cost = c.0 + c.1;
+            if detour_cost <= threshold {
+                let new: Option<SearchMatches<L>> = rw.searcher.search_eclass(eg, e.id);
+                if new.is_some() {
+                    if detour_cost < threshold {
+                        threshold = detour_cost;
+                        out.clear();
+                    }
+                    out.extend(new);
+                }
+            }
+        }
+        out
     }
 }
 
-impl<L: Language> Analysis<L> for DetourCost {
+impl<L: Language> Analysis<L> for DetourAnalysis {
     type Data = (/*Cost*/usize, /*Ctxt Cost*/usize);
 
     fn make(eg: &mut EGraph<L, Self>, n: &L, i: Id) -> Self::Data {
@@ -33,7 +50,7 @@ define_language! {
     }
 }
 
-fn rules() -> Vec<Rewrite<Math, DetourCost>> {
+fn rules() -> Vec<Rewrite<Math, DetourAnalysis>> {
     vec![
         rewrite!("cancel"; "(- ?a ?a)" => "z"),
         rewrite!("assoc-i"; "(+ (+ ?a ?b) ?c)" => "(+ ?a (+ ?b ?c))"),
@@ -43,8 +60,8 @@ fn rules() -> Vec<Rewrite<Math, DetourCost>> {
 
 fn main() {
     let st = "(+ a (- b b))".parse().unwrap();
-    let r: Runner<Math, DetourCost> =
-        Runner::new(DetourCost)
+    let r: Runner<Math, DetourAnalysis> =
+        Runner::new(DetourAnalysis)
             .with_expr(&st)
             .with_scheduler(DetourScheduler)
             .run(&rules());
