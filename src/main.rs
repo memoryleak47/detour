@@ -28,7 +28,9 @@ define_language! {
 
 fn rules() -> Vec<Rewrite<Math, DetourCost>> {
     vec![
-        rewrite!("cancel"; "(- ?a ?a)" => "z")
+        rewrite!("cancel"; "(- ?a ?a)" => "z"),
+        rewrite!("assoc-i"; "(+ (+ ?a ?b) ?c)" => "(+ ?a (+ ?b ?c))"),
+        rewrite!("assoc-ii"; "(+ ?a (+ ?b ?c))" => "(+ (+ ?a ?b) ?c)"),
     ]
 }
 
