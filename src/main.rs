@@ -3,10 +3,23 @@ use std::collections::BTreeMap;
 
 struct DetourAnalysis;
 
+fn lookup_pat<L: Language>(pat: &PatternAst<L>, eg: &EGraph<L, DetourAnalysis>, subst: &Subst) -> Option<Id> {
+    let mut vec = Vec::new();
+    for i in 0..pat.len() {
+        match &pat[i.into()] {
+            ENodeOrVar::ENode(n) => {
+                let mut n = n.clone().map_children(|k| vec[usize::from(k)]);
+                let k = eg.lookup(&mut n)?;
+                vec.push(k);
+            },
+            ENodeOrVar::Var(v) => vec.push(subst[*v]),
+        }
+    }
+    vec.last().copied()
+}
+
 // one iteration of eqsat governed by the detour system.
 fn detour_iter<L: Language>(rws: &[Rewrite<L, DetourAnalysis>], eg: &mut EGraph<L, DetourAnalysis>) {
-    let mut matches: Vec<(usize, SearchMatches<L>)> = Vec::new();
-
     let mut dd: BTreeMap<usize, Vec<Id>> = Default::default();
     for x in eg.classes() {
         let x = x.id;
@@ -17,30 +30,33 @@ fn detour_iter<L: Language>(rws: &[Rewrite<L, DetourAnalysis>], eg: &mut EGraph<
         dd.get_mut(&det).unwrap().push(x);
     }
 
+    let mut added_eqs: Vec<(Id, Id)> = Vec::new();
+
     for (_, x) in &dd {
-        let mut matches: Vec<(usize /*rw index*/, SearchMatches<L>)> = Vec::new();
-
-        // TODO this rebuild shouldn't be necessary.
-        eg.rebuild();
-
         for i in x {
             for (rw_i, rw) in rws.iter().enumerate() {
                 if let Some(sm) = rw.searcher.search_eclass(eg, *i) {
-                    matches.push((rw_i, sm));
+                    for subst in sm.substs {
+                        let rhs_pat = rw.applier.get_pattern_ast().unwrap();
+                        let Some(rhs) = lookup_pat(&rhs_pat, eg, &subst) else { continue };
+                        let lhs = sm.eclass;
+                        if eg.find(lhs) != eg.find(rhs) {
+                            added_eqs.push((lhs, rhs));
+                        }
+                    }
                 }
             }
         }
 
-        let mut dirty = false;
-        for (rw_i, sm) in matches {
-            let changes = rws[rw_i].applier.apply_matches(eg, &[sm], rws[rw_i].name);
-            if changes.len() > 0 { dirty = true; }
+        for &(lhs, rhs) in &added_eqs {
+            eg.union(lhs, rhs);
         }
 
-        if dirty { break }
+        if added_eqs.len() > 0 {
+            eg.rebuild();
+            break
+        }
     }
-
-    eg.rebuild();
 }
 
 fn detour_cost<L: Language>(id: Id, eg: &EGraph<L, DetourAnalysis>) -> usize {
@@ -111,7 +127,9 @@ fn main() {
     let mut eg = EGraph::new(DetourAnalysis);
     let i = eg.add_expr(&st);
     let rws = rules();
-    for _ in 0..5 {
+
+    eg.rebuild();
+    for _ in 0..14 {
         detour_iter(&rws, &mut eg);
     }
     let ex = Extractor::new(&eg, AstSize);
