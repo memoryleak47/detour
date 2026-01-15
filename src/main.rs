@@ -44,7 +44,8 @@ fn detour_iter<L: Language>(rws: &[Rewrite<L, DetourAnalysis>], eg: &mut EGraph<
 }
 
 fn detour_cost<L: Language>(id: Id, eg: &EGraph<L, DetourAnalysis>) -> usize {
-    4
+    let dat = eg[id].data;
+    dat.0 + dat.1
 }
 
 impl<L: Language> Analysis<L> for DetourAnalysis {
@@ -56,8 +57,13 @@ impl<L: Language> Analysis<L> for DetourAnalysis {
     }
 
     fn merge(&mut self, d1: &mut Self::Data, d2: Self::Data) -> DidMerge {
-        d1.0 = d1.0.min(d2.0);
-        DidMerge(false, false)
+        let v1 = *d1;
+        let v2 = d2;
+
+        let out = (v1.0.min(v2.0), 0 /* TODO */);
+        *d1 = out;
+
+        DidMerge(out != v1, out != v2)
     }
 }
 
