@@ -30,29 +30,29 @@ fn detour_iter<L: Language>(rws: &[Rewrite<L, DetourAnalysis>], eg: &mut EGraph<
         dd.get_mut(&det).unwrap().push(x);
     }
 
-    let mut added_eqs: Vec<(Id, Id)> = Vec::new();
+    let mut new_apps: Vec<(/*rw index*/ usize, /*lhs*/ Id, Subst)> = Vec::new();
 
     for (_, x) in &dd {
         for i in x {
             for (rw_i, rw) in rws.iter().enumerate() {
                 if let Some(sm) = rw.searcher.search_eclass(eg, *i) {
+                    let rhs_pat = rw.applier.get_pattern_ast().unwrap();
                     for subst in sm.substs {
-                        let rhs_pat = rw.applier.get_pattern_ast().unwrap();
-                        let Some(rhs) = lookup_pat(&rhs_pat, eg, &subst) else { continue };
+                        let rhs = lookup_pat(&rhs_pat, eg, &subst);
                         let lhs = sm.eclass;
-                        if eg.find(lhs) != eg.find(rhs) {
-                            added_eqs.push((lhs, rhs));
+                        if Some(lhs) != rhs {
+                            new_apps.push((rw_i, lhs, subst));
                         }
                     }
                 }
             }
         }
 
-        for &(lhs, rhs) in &added_eqs {
-            eg.union(lhs, rhs);
+        for (rw_i, lhs, subst) in &new_apps {
+            rws[*rw_i].applier.apply_one(eg, *lhs, subst, None, rws[*rw_i].name);
         }
 
-        if added_eqs.len() > 0 {
+        if new_apps.len() > 0 {
             eg.rebuild();
             break
         }
@@ -129,7 +129,7 @@ fn main() {
     let rws = rules();
 
     eg.rebuild();
-    for _ in 0..14 {
+    for _ in 0..5 {
         detour_iter(&rws, &mut eg);
     }
     let ex = Extractor::new(&eg, AstSize);
