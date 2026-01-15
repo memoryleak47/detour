@@ -1,22 +1,50 @@
 use egg::*;
+use std::collections::BTreeMap;
 
 struct DetourAnalysis;
 
 // one iteration of eqsat governed by the detour system.
 fn detour_iter<L: Language>(rws: &[Rewrite<L, DetourAnalysis>], eg: &mut EGraph<L, DetourAnalysis>) {
-    let mut matches: Vec<_> = Vec::new();
-    for rw in rws {
-        let s = rw.searcher.search(eg);
-        matches.push(s);
+    let mut matches: Vec<(usize, SearchMatches<L>)> = Vec::new();
+
+    let mut dd: BTreeMap<usize, Vec<Id>> = Default::default();
+    for x in eg.classes() {
+        let x = x.id;
+        let det = detour_cost(x, eg);
+        if !dd.contains_key(&det) {
+            dd.insert(det, Vec::new());
+        }
+        dd.get_mut(&det).unwrap().push(x);
     }
 
-    for (rw, matches) in rws.iter().zip(matches.into_iter()) {
-        rw.applier.apply_matches(eg, &matches, rw.name);
-    }
+    for (_, x) in &dd {
+        let mut matches: Vec<(usize /*rw index*/, SearchMatches<L>)> = Vec::new();
 
-    // TODO actually use the detour cost.
+        // TODO this rebuild shouldn't be necessary.
+        eg.rebuild();
+
+        for i in x {
+            for (rw_i, rw) in rws.iter().enumerate() {
+                if let Some(sm) = rw.searcher.search_eclass(eg, *i) {
+                    matches.push((rw_i, sm));
+                }
+            }
+        }
+
+        let mut dirty = false;
+        for (rw_i, sm) in matches {
+            let changes = rws[rw_i].applier.apply_matches(eg, &[sm], rws[rw_i].name);
+            if changes.len() > 0 { dirty = true; }
+        }
+
+        if dirty { break }
+    }
 
     eg.rebuild();
+}
+
+fn detour_cost<L: Language>(id: Id, eg: &EGraph<L, DetourAnalysis>) -> usize {
+    4
 }
 
 impl<L: Language> Analysis<L> for DetourAnalysis {
