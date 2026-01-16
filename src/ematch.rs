@@ -6,18 +6,18 @@ pub fn ematch_node(pat: &PatternAst<Math>, n: &Math, eg: &EG) -> Vec<Subst> {
             todo!()
         },
         ENodeOrVar::ENode(pn) => {
-            let mut out = Vec::new();
-
-            if n.discriminant() == pn.discriminant() {
-                let mut accum = vec![Subst::default()];
-                for (pc, c) in pn.children().iter().zip(n.children().iter()) {
-                    for a in std::mem::take(&mut accum) {
-                        accum.extend(ematch_impl(*pc, pat, *c, eg, a));
-                    }
-                }
-                out.extend(accum);
+            if n.discriminant() != pn.discriminant() {
+                return Vec::new();
             }
-            out
+
+            let mut accum = vec![Subst::default()];
+            for (pc, c) in pn.children().iter().zip(n.children().iter()) {
+                for a in std::mem::take(&mut accum) {
+                    let tt = ematch_impl(*pc, pat, *c, eg, a);
+                    accum.extend(tt);
+                }
+            }
+            accum
         },
     }
 }
@@ -44,6 +44,7 @@ pub fn ematch_impl(pat_id: Id, pat: &PatternAst<Math>, class: Id, eg: &EG, subst
                         accum.extend(ematch_impl(*pc, pat, *c, eg, a));
                     }
                 }
+                out.extend(accum);
             }
             out
         },

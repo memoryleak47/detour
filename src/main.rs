@@ -46,7 +46,7 @@ fn rules() -> Vec<Rewrite<Math, ()>> {
 fn init_term() -> String {
     let mut s = String::from("zero");
     let mut v = Vec::new();
-    let n = 15;
+    let n = 4;
     for i in 0..n {
         let j = (i+n/2)%n;
         v.push(format!("a{i}"));
@@ -66,7 +66,7 @@ fn main() {
     let rws = rules();
 
     eg.rebuild();
-    for _ in 0..10 {
+    for _ in 0..100 {
         detour_eqsat_iter(i, &rws, &mut eg);
 
         let ex = Extractor::new(&eg, AstSize);
