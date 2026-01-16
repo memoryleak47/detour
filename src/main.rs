@@ -59,6 +59,11 @@ fn init_term() -> String {
 }
 
 fn main() {
+    main_detour();
+    // main_normal();
+}
+
+fn main_detour() {
     let st: RecExpr<Math> = init_term().parse().unwrap();
     println!("Initial: {st}");
     let mut eg = EGraph::new(());
@@ -66,10 +71,24 @@ fn main() {
     let rws = rules();
 
     eg.rebuild();
-    for _ in 0..100 {
+    for _ in 0..7 {
         detour_eqsat_iter(i, &rws, &mut eg);
 
         let ex = Extractor::new(&eg, AstSize);
         println!("Extracted: {}", ex.find_best(i).1);
     }
+}
+
+fn main_normal() {
+    let st: RecExpr<Math> = init_term().parse().unwrap();
+    println!("Initial: {st}");
+    let r: Runner<Math, ()> =
+        Runner::new(())
+            .with_expr(&st)
+            .with_node_limit(1_000_000)
+            .with_iter_limit(40)
+            .run(&rules());
+    dbg!(r.stop_reason);
+    let ex = Extractor::new(&r.egraph, AstSize);
+    println!("Extracted: {}", ex.find_best(r.roots[0]).1);
 }

@@ -17,6 +17,11 @@ pub fn compute_detour_costs(id: Id, eg: &EG) -> BTreeMap<usize, Vec<Math>> {
         for e in &eg[i].nodes {
             let e_cost = AstSize.cost(e, |k| ex.find_best_cost(k));
             for &c in e.children() {
+                // optimization: don't push junk to the queue.
+                // NOTE: if we remembered what's the best thing we already pushed to the queue for some class,
+                // we could do more efficient pruning.
+                if ctxt_cost.contains_key(&c) { continue }
+
                 let c_cost = ex.find_best_cost(c);
                 let ncst = e_cost + cst - c_cost;
                 queue.push((usize::MAX - ncst, c));
