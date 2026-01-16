@@ -2,7 +2,9 @@ use egg::*;
 
 use std::collections::{BTreeMap, HashMap, BinaryHeap};
 
-fn lookup_pat<L: Language>(pat: &PatternAst<L>, eg: &EGraph<L, ()>, subst: &Subst) -> Option<Id> {
+type EG = EGraph<Math, ()>;
+
+fn lookup_pat(pat: &PatternAst<Math>, eg: &EG, subst: &Subst) -> Option<Id> {
     let mut vec = Vec::new();
     for i in 0..pat.len() {
         match &pat[i.into()] {
@@ -17,7 +19,7 @@ fn lookup_pat<L: Language>(pat: &PatternAst<L>, eg: &EGraph<L, ()>, subst: &Subs
     vec.last().copied()
 }
 
-fn compute_detour_costs<L: Language>(id: Id, eg: &EGraph<L, ()>) -> BTreeMap<usize, Vec<Id>> {
+fn compute_detour_costs(id: Id, eg: &EG) -> BTreeMap<usize, Vec<Id>> {
     let ex = Extractor::new(eg, AstSize);
     let mut ctxt_cost = HashMap::new();
 
@@ -31,30 +33,43 @@ fn compute_detour_costs<L: Language>(id: Id, eg: &EGraph<L, ()>) -> BTreeMap<usi
         let cst = usize::MAX - cst;
         if ctxt_cost.contains_key(&i) { continue }
         ctxt_cost.insert(i, cst);
-        for e in eg.nodes() {
+        for e in &eg[i].nodes {
             let e_cost = AstSize.cost(e, |k| ex.find_best_cost(k));
             for &c in e.children() {
                 let c_cost = ex.find_best_cost(c);
-                let ncst = e_cost - c_cost;
+                let ncst = e_cost + cst - c_cost;
                 queue.push((usize::MAX - ncst, c));
             }
         }
     }
 
     let mut dd: BTreeMap<usize, Vec<Id>> = Default::default();
+    let opt_cost = ex.find_best_cost(id);
     for x in eg.classes() {
         let x = x.id;
-        let det = ctxt_cost[&x] + ex.find_best_cost(x);
+        let det = ctxt_cost[&x] + ex.find_best_cost(x) - opt_cost;
         if !dd.contains_key(&det) {
             dd.insert(det, Vec::new());
         }
         dd.get_mut(&det).unwrap().push(x);
     }
+
+    /*
+        println!("===============");
+        for (cst, xx) in dd.iter() {
+            dbg!(cst);
+            for x in xx {
+                println!("{}", ex.find_best(*x).1);
+            }
+        }
+        println!("===============");
+    */
+
     dd
 }
 
 // one iteration of eqsat governed by the detour system.
-fn detour_iter<L: Language>(id: Id, rws: &[Rewrite<L, ()>], eg: &mut EGraph<L, ()>) {
+fn detour_iter(id: Id, rws: &[Rewrite<Math, ()>], eg: &mut EG) {
     let dd = compute_detour_costs(id, eg);
 
     let mut new_apps: Vec<(/*rw index*/ usize, /*lhs*/ Id, Subst)> = Vec::new();
@@ -118,7 +133,7 @@ fn rules() -> Vec<Rewrite<Math, ()>> {
 
 fn init_term() -> String {
     let mut s = String::from("zero");
-    for i in 0..5 {
+    for i in 0..33 {
         s = format!("(+ (+ a{i} {s}) (- a{i}))");
     }
     s
@@ -134,7 +149,8 @@ fn main() {
     eg.rebuild();
     for _ in 0..5 {
         detour_iter(i, &rws, &mut eg);
+
+        let ex = Extractor::new(&eg, AstSize);
+        println!("Extracted: {}", ex.find_best(i).1);
     }
-    let ex = Extractor::new(&eg, AstSize);
-    println!("Extracted: {}", ex.find_best(i).1);
 }
