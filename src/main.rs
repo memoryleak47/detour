@@ -1,11 +1,8 @@
 use egg::*;
-use std::collections::BTreeMap;
-use std::collections::HashMap;
-use std::collections::BinaryHeap;
 
-struct DetourAnalysis;
+use std::collections::{BTreeMap, HashMap, BinaryHeap};
 
-fn lookup_pat<L: Language>(pat: &PatternAst<L>, eg: &EGraph<L, DetourAnalysis>, subst: &Subst) -> Option<Id> {
+fn lookup_pat<L: Language>(pat: &PatternAst<L>, eg: &EGraph<L, ()>, subst: &Subst) -> Option<Id> {
     let mut vec = Vec::new();
     for i in 0..pat.len() {
         match &pat[i.into()] {
@@ -20,7 +17,7 @@ fn lookup_pat<L: Language>(pat: &PatternAst<L>, eg: &EGraph<L, DetourAnalysis>, 
     vec.last().copied()
 }
 
-fn compute_detour_costs<L: Language>(id: Id, eg: &EGraph<L, ()>) -> HashMap<Id, usize> {
+fn compute_detour_costs<L: Language>(id: Id, eg: &EGraph<L, ()>) -> BTreeMap<usize, Vec<Id>> {
     let ex = Extractor::new(eg, AstSize);
     let mut ctxt_cost = HashMap::new();
 
@@ -44,25 +41,21 @@ fn compute_detour_costs<L: Language>(id: Id, eg: &EGraph<L, ()>) -> HashMap<Id, 
         }
     }
 
-    let mut out = HashMap::new();
-    for i in eg.classes() {
-        let i = i.id;
-        out.insert(i, ctxt_cost[&i] + ex.find_best_cost(i));
-    }
-    out
-}
-
-// one iteration of eqsat governed by the detour system.
-fn detour_iter<L: Language>(rws: &[Rewrite<L, DetourAnalysis>], eg: &mut EGraph<L, DetourAnalysis>) {
     let mut dd: BTreeMap<usize, Vec<Id>> = Default::default();
     for x in eg.classes() {
         let x = x.id;
-        let det = detour_cost(x, eg);
+        let det = ctxt_cost[&x] + ex.find_best_cost(x);
         if !dd.contains_key(&det) {
             dd.insert(det, Vec::new());
         }
         dd.get_mut(&det).unwrap().push(x);
     }
+    dd
+}
+
+// one iteration of eqsat governed by the detour system.
+fn detour_iter<L: Language>(id: Id, rws: &[Rewrite<L, ()>], eg: &mut EGraph<L, ()>) {
+    let dd = compute_detour_costs(id, eg);
 
     let mut new_apps: Vec<(/*rw index*/ usize, /*lhs*/ Id, Subst)> = Vec::new();
 
@@ -93,30 +86,6 @@ fn detour_iter<L: Language>(rws: &[Rewrite<L, DetourAnalysis>], eg: &mut EGraph<
     }
 }
 
-fn detour_cost<L: Language>(id: Id, eg: &EGraph<L, DetourAnalysis>) -> usize {
-    let dat = eg[id].data;
-    dat.0 + dat.1
-}
-
-impl<L: Language> Analysis<L> for DetourAnalysis {
-    type Data = (/*Cost*/usize, /*Ctxt Cost*/usize);
-
-    fn make(eg: &mut EGraph<L, Self>, n: &L, i: Id) -> Self::Data {
-        let cost = AstSize.cost(n, |i| eg[i].data.0);
-        (cost, 0 /* TODO */)
-    }
-
-    fn merge(&mut self, d1: &mut Self::Data, d2: Self::Data) -> DidMerge {
-        let v1 = *d1;
-        let v2 = d2;
-
-        let out = (v1.0.min(v2.0), 0 /* TODO */);
-        *d1 = out;
-
-        DidMerge(out != v1, out != v2)
-    }
-}
-
 define_language! {
     pub enum Math {
         "+" = Add([Id; 2]),
@@ -127,7 +96,7 @@ define_language! {
     }
 }
 
-fn rules() -> Vec<Rewrite<Math, DetourAnalysis>> {
+fn rules() -> Vec<Rewrite<Math, ()>> {
     vec![
         rewrite!("neg_cancel"; "(+ ?a (- ?a))" => "zero"),
         rewrite!("div_cancel"; "(* ?a (/ ?a))" => "one"),
@@ -158,13 +127,13 @@ fn init_term() -> String {
 fn main() {
     let st: RecExpr<Math> = init_term().parse().unwrap();
     println!("Initial: {st}");
-    let mut eg = EGraph::new(DetourAnalysis);
+    let mut eg = EGraph::new(());
     let i = eg.add_expr(&st);
     let rws = rules();
 
     eg.rebuild();
     for _ in 0..5 {
-        detour_iter(&rws, &mut eg);
+        detour_iter(i, &rws, &mut eg);
     }
     let ex = Extractor::new(&eg, AstSize);
     println!("Extracted: {}", ex.find_best(i).1);
