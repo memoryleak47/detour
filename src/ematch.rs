@@ -15,6 +15,7 @@ pub fn ematch_node(pat: &PatternAst<Math>, n: &Math, eg: &EG) -> Vec<Subst> {
                         accum.extend(ematch_impl(*pc, pat, *c, eg, a));
                     }
                 }
+                out.extend(accum);
             }
             out
         },
