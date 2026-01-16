@@ -46,7 +46,7 @@ fn rules() -> Vec<Rewrite<Math, ()>> {
 fn init_term() -> String {
     let mut s = String::from("zero");
     let mut v = Vec::new();
-    let n = 4;
+    let n = 10;
     for i in 0..n {
         let j = (i+n/2)%n;
         v.push(format!("a{i}"));
