@@ -1,5 +1,7 @@
 use egg::*;
 use std::collections::BTreeMap;
+use std::collections::HashMap;
+use std::collections::BinaryHeap;
 
 struct DetourAnalysis;
 
@@ -16,6 +18,38 @@ fn lookup_pat<L: Language>(pat: &PatternAst<L>, eg: &EGraph<L, DetourAnalysis>, 
         }
     }
     vec.last().copied()
+}
+
+fn compute_detour_costs<L: Language>(id: Id, eg: &EGraph<L, ()>) -> HashMap<Id, usize> {
+    let ex = Extractor::new(eg, AstSize);
+    let mut ctxt_cost = HashMap::new();
+
+    // as this queue is a max-heap, we'll store usize::MAX - ctxt_cost in the usize of queue.
+    let mut queue: BinaryHeap<(usize, Id)> = BinaryHeap::new();
+
+    // initial
+    queue.push((usize::MAX - 0, id));
+
+    while let Some((cst, i)) = queue.pop() {
+        let cst = usize::MAX - cst;
+        if ctxt_cost.contains_key(&i) { continue }
+        ctxt_cost.insert(i, cst);
+        for e in eg.nodes() {
+            let e_cost = AstSize.cost(e, |k| ex.find_best_cost(k));
+            for &c in e.children() {
+                let c_cost = ex.find_best_cost(c);
+                let ncst = e_cost - c_cost;
+                queue.push((usize::MAX - ncst, c));
+            }
+        }
+    }
+
+    let mut out = HashMap::new();
+    for i in eg.classes() {
+        let i = i.id;
+        out.insert(i, ctxt_cost[&i] + ex.find_best_cost(i));
+    }
+    out
 }
 
 // one iteration of eqsat governed by the detour system.
