@@ -6,6 +6,9 @@ pub use ematch::*;
 mod detour;
 pub use detour::*;
 
+mod eqsat;
+pub use eqsat::*;
+
 use std::collections::{BTreeMap, HashMap, BinaryHeap};
 
 pub type EG = EGraph<Math, ()>;
