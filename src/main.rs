@@ -4,6 +4,34 @@ use std::collections::{BTreeMap, HashMap, BinaryHeap};
 
 type EG = EGraph<Math, ()>;
 
+fn ematch_impl(pat_id: Id, pat: &PatternAst<Math>, class: Id, eg: &EG, subst: Subst) -> Vec<Subst> {
+    match &pat[pat_id] {
+        ENodeOrVar::Var(v) => {
+            let mut subst = subst;
+            if let Some(x) = subst.get(*v) {
+                if *x != class { return Vec::new() }
+            } else {
+                subst.insert(*v, class);
+            }
+            vec![subst]
+        },
+        ENodeOrVar::ENode(pn) => {
+            let mut out = Vec::new();
+            for n in &eg[class].nodes {
+                if n.discriminant() != pn.discriminant() { continue }
+
+                let mut accum = vec![subst.clone()];
+                for (pc, c) in pn.children().iter().zip(n.children().iter()) {
+                    for a in std::mem::take(&mut accum) {
+                        accum.extend(ematch_impl(*pc, pat, *c, eg, a));
+                    }
+                }
+            }
+            out
+        },
+    }
+}
+
 fn lookup_pat(pat: &PatternAst<Math>, eg: &EG, subst: &Subst) -> Option<Id> {
     let mut vec = Vec::new();
     for i in 0..pat.len() {
@@ -133,8 +161,15 @@ fn rules() -> Vec<Rewrite<Math, ()>> {
 
 fn init_term() -> String {
     let mut s = String::from("zero");
-    for i in 0..33 {
-        s = format!("(+ (+ a{i} {s}) (- a{i}))");
+    let mut v = Vec::new();
+    let n = 15;
+    for i in 0..n {
+        let j = (i+n/2)%n;
+        v.push(format!("a{i}"));
+        v.push(format!("(- a{j})"));
+    }
+    for x in v {
+        s = format!("(+ {s} {x})");
     }
     s
 }
@@ -147,7 +182,7 @@ fn main() {
     let rws = rules();
 
     eg.rebuild();
-    for _ in 0..5 {
+    for _ in 0..10 {
         detour_iter(i, &rws, &mut eg);
 
         let ex = Extractor::new(&eg, AstSize);
