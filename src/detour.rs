@@ -1,6 +1,6 @@
 use crate::*;
 
-pub fn compute_detour_costs(id: Id, eg: &EG) -> BTreeMap<usize, Vec<Id>> {
+pub fn compute_detour_costs(id: Id, eg: &EG) -> BTreeMap<usize, Vec<Math>> {
     let ex = Extractor::new(eg, AstSize);
     let mut ctxt_cost = HashMap::new();
 
@@ -24,27 +24,18 @@ pub fn compute_detour_costs(id: Id, eg: &EG) -> BTreeMap<usize, Vec<Id>> {
         }
     }
 
-    let mut dd: BTreeMap<usize, Vec<Id>> = Default::default();
+    let mut dd: BTreeMap<usize, Vec<Math>> = Default::default();
     let opt_cost = ex.find_best_cost(id);
-    for x in eg.classes() {
-        let x = x.id;
-        let det = ctxt_cost[&x] + ex.find_best_cost(x) - opt_cost;
+    for n in eg.nodes() {
+        let cl = eg.lookup(&mut n.clone()).unwrap();
+        let class_ctxt_cost = ctxt_cost[&cl];
+        let node_cost = AstSize.cost(n, |k| ex.find_best_cost(k));
+        let det = class_ctxt_cost + node_cost - opt_cost;
         if !dd.contains_key(&det) {
             dd.insert(det, Vec::new());
         }
-        dd.get_mut(&det).unwrap().push(x);
+        dd.get_mut(&det).unwrap().push(n.clone());
     }
-
-    /*
-        println!("===============");
-        for (cst, xx) in dd.iter() {
-            dbg!(cst);
-            for x in xx {
-                println!("{}", ex.find_best(*x).1);
-            }
-        }
-        println!("===============");
-    */
 
     dd
 }

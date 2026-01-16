@@ -7,16 +7,15 @@ pub fn detour_eqsat_iter(id: Id, rws: &[Rewrite<Math, ()>], eg: &mut EG) {
     let mut new_apps: Vec<(/*rw index*/ usize, /*lhs*/ Id, Subst)> = Vec::new();
 
     for (_, x) in &dd {
-        for i in x {
+        for n in x {
+            let lhs = eg.lookup(&mut n.clone()).unwrap();
             for (rw_i, rw) in rws.iter().enumerate() {
-                if let Some(sm) = rw.searcher.search_eclass(eg, *i) {
-                    let rhs_pat = rw.applier.get_pattern_ast().unwrap();
-                    for subst in sm.substs {
-                        let rhs = lookup_pat(&rhs_pat, eg, &subst);
-                        let lhs = sm.eclass;
-                        if Some(lhs) != rhs {
-                            new_apps.push((rw_i, lhs, subst));
-                        }
+                let lhs_pat = rw.searcher.get_pattern_ast().unwrap();
+                let rhs_pat = rw.applier.get_pattern_ast().unwrap();
+                for subst in ematch_node(lhs_pat, n, eg) {
+                    let rhs = lookup_pat(&rhs_pat, eg, &subst);
+                    if Some(lhs) != rhs {
+                        new_apps.push((rw_i, lhs, subst));
                     }
                 }
             }
@@ -47,6 +46,3 @@ fn lookup_pat(pat: &PatternAst<Math>, eg: &EG, subst: &Subst) -> Option<Id> {
     }
     vec.last().copied()
 }
-
-
-

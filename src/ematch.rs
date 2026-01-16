@@ -1,5 +1,26 @@
 use crate::*;
 
+pub fn ematch_node(pat: &PatternAst<Math>, n: &Math, eg: &EG) -> Vec<Subst> {
+    match &pat.last().unwrap() {
+        ENodeOrVar::Var(v) => {
+            todo!()
+        },
+        ENodeOrVar::ENode(pn) => {
+            let mut out = Vec::new();
+
+            if n.discriminant() == pn.discriminant() {
+                let mut accum = vec![Subst::default()];
+                for (pc, c) in pn.children().iter().zip(n.children().iter()) {
+                    for a in std::mem::take(&mut accum) {
+                        accum.extend(ematch_impl(*pc, pat, *c, eg, a));
+                    }
+                }
+            }
+            out
+        },
+    }
+}
+
 pub fn ematch_impl(pat_id: Id, pat: &PatternAst<Math>, class: Id, eg: &EG, subst: Subst) -> Vec<Subst> {
     match &pat[pat_id] {
         ENodeOrVar::Var(v) => {
