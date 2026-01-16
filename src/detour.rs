@@ -31,15 +31,17 @@ pub fn compute_detour_costs(id: Id, eg: &EG) -> BTreeMap<usize, Vec<Math>> {
 
     let mut dd: BTreeMap<usize, Vec<Math>> = Default::default();
     let opt_cost = ex.find_best_cost(id);
-    for n in eg.nodes() {
-        let cl = eg.lookup(&mut n.clone()).unwrap();
-        let class_ctxt_cost = ctxt_cost[&cl];
-        let node_cost = AstSize.cost(n, |k| ex.find_best_cost(k));
-        let det = class_ctxt_cost + node_cost - opt_cost;
-        if !dd.contains_key(&det) {
-            dd.insert(det, Vec::new());
+    for cc in eg.classes() {
+        for n in &eg[cc.id].nodes {
+            let cl = eg.lookup(&mut n.clone()).unwrap();
+            let class_ctxt_cost = ctxt_cost[&cl];
+            let node_cost = AstSize.cost(n, |k| ex.find_best_cost(k));
+            let det = class_ctxt_cost + node_cost - opt_cost;
+            if !dd.contains_key(&det) {
+                dd.insert(det, Vec::new());
+            }
+            dd.get_mut(&det).unwrap().push(n.clone());
         }
-        dd.get_mut(&det).unwrap().push(n.clone());
     }
 
     dd
