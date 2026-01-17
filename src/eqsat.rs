@@ -1,7 +1,7 @@
 use crate::*;
 
 // one iteration of eqsat governed by the detour system.
-pub fn detour_eqsat_iter(id: Id, rws: &[Rewrite<Math, ()>], eg: &mut EG) {
+pub fn detour_eqsat_iter<L: Language>(id: Id, rws: &[Rewrite<L, ()>], eg: &mut EGraph<L, ()>) {
     let dd = compute_detour_costs(id, eg);
 
     let mut new_apps: Vec<(/*rw index*/ usize, /*lhs*/ Id, Subst)> = Vec::new();
@@ -32,7 +32,7 @@ pub fn detour_eqsat_iter(id: Id, rws: &[Rewrite<Math, ()>], eg: &mut EG) {
     }
 }
 
-fn lookup_pat(pat: &PatternAst<Math>, eg: &EG, subst: &Subst) -> Option<Id> {
+fn lookup_pat<L: Language>(pat: &PatternAst<L>, eg: &EGraph<L, ()>, subst: &Subst) -> Option<Id> {
     let mut vec = Vec::new();
     for i in 0..pat.len() {
         match &pat[i.into()] {

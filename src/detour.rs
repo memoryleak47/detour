@@ -1,6 +1,6 @@
 use crate::*;
 
-pub fn compute_detour_costs(id: Id, eg: &EG) -> BTreeMap<usize, Vec<Math>> {
+pub fn compute_detour_costs<L: Language>(id: Id, eg: &EGraph<L, ()>) -> BTreeMap<usize, Vec<L>> {
     let ex = Extractor::new(eg, AstSize);
     let mut ctxt_cost = HashMap::new();
 
@@ -29,7 +29,7 @@ pub fn compute_detour_costs(id: Id, eg: &EG) -> BTreeMap<usize, Vec<Math>> {
         }
     }
 
-    let mut dd: BTreeMap<usize, Vec<Math>> = Default::default();
+    let mut dd: BTreeMap<usize, Vec<L>> = Default::default();
     let opt_cost = ex.find_best_cost(id);
     for cc in eg.classes() {
         for n in &eg[cc.id].nodes {

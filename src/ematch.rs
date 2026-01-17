@@ -1,9 +1,12 @@
 use crate::*;
 
-pub fn ematch_node(pat: &PatternAst<Math>, n: &Math, eg: &EG) -> Vec<Subst> {
+pub fn ematch_node<L: Language>(pat: &PatternAst<L>, n: &L, eg: &EGraph<L, ()>) -> Vec<Subst> {
     match &pat.last().unwrap() {
         ENodeOrVar::Var(v) => {
-            todo!()
+            let mut subst = Subst::default();
+            let cl = eg.lookup(&mut n.clone()).unwrap();
+            subst.insert(*v, cl);
+            vec![subst]
         },
         ENodeOrVar::ENode(pn) => {
             if !n.matches(&pn) {
@@ -22,7 +25,7 @@ pub fn ematch_node(pat: &PatternAst<Math>, n: &Math, eg: &EG) -> Vec<Subst> {
     }
 }
 
-pub fn ematch_impl(pat_id: Id, pat: &PatternAst<Math>, class: Id, eg: &EG, subst: Subst) -> Vec<Subst> {
+pub fn ematch_impl<L: Language>(pat_id: Id, pat: &PatternAst<L>, class: Id, eg: &EGraph<L, ()>, subst: Subst) -> Vec<Subst> {
     match &pat[pat_id] {
         ENodeOrVar::Var(v) => {
             let mut subst = subst;
