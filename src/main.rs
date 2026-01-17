@@ -16,7 +16,10 @@ pub use compare::*;
 mod ex1;
 pub use ex1::*;
 
+mod ex2;
+pub use ex2::*;
+
 
 fn main() {
-    run_ex1();
+    run_ex2();
 }
