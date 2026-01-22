@@ -21,5 +21,5 @@ pub use ex2::*;
 
 
 fn main() {
-    run_ex2();
+    run_ex1();
 }
