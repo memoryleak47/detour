@@ -61,12 +61,12 @@ fn fix(f: &str) -> String {
     format!("{omega} {omega}")
 }
 
-// pred n = \x. \y. n x y
-// pred n = \. \. n 2 1
+// pred n = n zero (\x. x)
 fn pred(n: &str) -> String {
-    let v2 = var(2);
     let v1 = var(1);
-    format!("(lam (lam (app (app {n} {v2}) {v1})))")
+    let zero = zero();
+    let id = format!("(lam one)");
+    format!("(app (app {n} {zero}) {id})")
 }
 
 fn init_term() -> String {
