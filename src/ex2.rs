@@ -63,7 +63,6 @@ fn fix(f: &str) -> String {
 
 // pred n = n zero (\x. x)
 fn pred(n: &str) -> String {
-    let v1 = var(1);
     let zero = zero();
     let id = format!("(lam one)");
     format!("(app (app {n} {zero}) {id})")
