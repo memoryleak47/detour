@@ -31,6 +31,8 @@ fn rules() -> Vec<Rewrite<Lambda, ()>> {
     ]
 }
 
+// n = \suc-callback. \zero-callback. _
+
 // zero = \x. \y. y
 // zero = \. \. 1
 fn zero() -> String {
@@ -61,16 +63,16 @@ fn fix(f: &str) -> String {
     format!("{omega} {omega}")
 }
 
-// pred n = n zero (\x. x)
+// pred n = n (\x. x) zero
 fn pred(n: &str) -> String {
     let zero = zero();
     let id = format!("(lam one)");
-    format!("(app (app {n} {zero}) {id})")
+    format!("(app (app {n} {id}) {zero})")
 }
 
 fn init_term() -> String {
     let mut x = zero();
-    let k = 1;
+    let k = 2;
     for _ in 0..k {
         x = suc(&x);
     }
