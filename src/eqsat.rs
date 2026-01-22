@@ -20,7 +20,7 @@ pub fn detour_eqsat_iter<L: Language + Display>(id: Id, rws: &[Rewrite<L, ()>], 
 
     let mut new_apps: Vec<(/*rw index*/ usize, /*lhs*/ Id, Subst)> = Vec::new();
 
-    for (_, x) in &dd {
+    for (cst, x) in &dd {
         for n in x {
             let lhs = eg.lookup(&mut n.clone()).unwrap();
             for (rw_i, rw) in rws.iter().enumerate() {
@@ -35,8 +35,9 @@ pub fn detour_eqsat_iter<L: Language + Display>(id: Id, rws: &[Rewrite<L, ()>], 
                             let subst_f = |v| ex.find_best(subst[v]).1;
                             let lhs_t = pat_to_term(lhs_pat, &subst_f);
                             let rhs_t = pat_to_term(rhs_pat, &subst_f);
-                            println!("  {lhs_t}");
-                            println!("= {rhs_t}");
+                            println!("cost: {cst},");
+                            println!("> {lhs_t}");
+                            println!("= {rhs_t};");
                         }
                         new_apps.push((rw_i, lhs, subst));
                     }
