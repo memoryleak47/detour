@@ -3,6 +3,7 @@ use std::fmt::Display;
 
 pub fn compare<L: Language + Display + FromOp>(init_term: &str, rws: &[Rewrite<L, ()>]) {
     eqsat_detour(init_term, rws);
+    println!("------------------------------");
     eqsat_normal(init_term, rws);
 }
 
