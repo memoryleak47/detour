@@ -20,6 +20,7 @@ pub fn eqsat_detour<L: Language + Display + FromOp>(init_term: &str, rws: &[Rewr
         let ex = Extractor::new(&eg, AstSize);
         println!("Detour Extracted: {}", ex.find_best(i).1);
     }
+    println!("Total Size: {}", eg.total_size());
 }
 
 pub fn eqsat_normal<L: Language + Display + FromOp>(init_term: &str, rws: &[Rewrite<L, ()>]) {
@@ -34,4 +35,5 @@ pub fn eqsat_normal<L: Language + Display + FromOp>(init_term: &str, rws: &[Rewr
     dbg!(r.stop_reason);
     let ex = Extractor::new(&r.egraph, AstSize);
     println!("Normal Extracted: {}", ex.find_best(r.roots[0]).1);
+    println!("Total Size: {}", r.egraph.total_size());
 }
