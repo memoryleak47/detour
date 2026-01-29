@@ -82,7 +82,11 @@ fn init_term() -> String {
 }
 
 fn init_term2() -> String {
-    let mut rng = rand::rng();
+    use rand::{SeedableRng, rngs::StdRng};
+
+    let mut rng = StdRng::from_seed([42u8; 32]);
+    // let mut rng = rand::rng();
+
     let s = random_math(500, &mut rng).to_string();
     println!("{}", &s);
     s
