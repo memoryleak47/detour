@@ -54,14 +54,13 @@ pub fn pat_detour_eqsat_step<L: Language + Display>(root: Id, rws: &[Rewrite<L, 
 
         // Debugging info
         {
-            println!("rule \"{}\": {} -> {}", rw.name, rw.searcher.get_pattern_ast().unwrap(), rw.applier.get_pattern_ast().unwrap());
+            // println!("rule \"{}\": {} -> {}", rw.name, rw.searcher.get_pattern_ast().unwrap(), rw.applier.get_pattern_ast().unwrap());
             let ex = Extractor::new(&eg, AstSize);
-            println!("cx_cost = {cx_cost}, pat_cost = {pat_cost}, full_cost = {full_cost}, root_cost = {root_cost}");
+            println!("cx_cost = {cx_cost:02}, pat_cost = {pat_cost:02}, full_cost = {full_cost:02}, root_cost = {root_cost:02}");
             for v in rw.searcher.vars() {
                 let term = ex.find_best(subst[v]).1;
-                println!("  {v} = {term}");
+                // println!("  {v} = {term}");
             }
-            println!();
         }
 
         rw.applier.apply_one(eg, *lhs, subst, None, rw.name);
