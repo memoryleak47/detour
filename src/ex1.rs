@@ -42,6 +42,15 @@ fn rules() -> Vec<Rewrite<Math, ()>> {
         rewrite!("neg_def1"; "(- ?a)" => "(* ?a (- one))"),
         rewrite!("neg_def2"; "(* ?a (- one))" => "(- ?a)"),
 
+        rewrite!("neutral1";  "(/ one)" => "one"),
+        rewrite!("neutral1_"; "one" => "(/ one)"),
+
+        rewrite!("neutral2";  "(- zero)" => "zero"),
+        rewrite!("neutral2_"; "zero" => "(- zero)"),
+
+        rewrite!("flip";  "(- (/ ?a))" => "(/ (- ?a))"),
+        rewrite!("flip_"; "(/ (- ?a))" => "(- (/ ?a))" ),
+
         rewrite!("plus_zero"; "(+ ?a zero)" => "?a"),
         rewrite!("mul_zero"; "(* ?a zero)" => "zero"),
         rewrite!("mul_one"; "(* ?a one)" => "?a"),
