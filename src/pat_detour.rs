@@ -8,7 +8,7 @@ pub fn eqsat_pat_detour<L: Language + Display + FromOp>(init_term: &str, rws: &[
     let i = eg.add_expr(&st);
 
     eg.rebuild();
-    for _ in 0..70 {
+    for _ in 0..520 {
         pat_detour_eqsat_step(i, rws, &mut eg);
 
         let ex = Extractor::new(&eg, AstSize);
@@ -21,7 +21,7 @@ pub fn pat_detour_eqsat_step<L: Language + Display>(root: Id, rws: &[Rewrite<L, 
     let ex = Extractor::new(&eg, AstSize);
     let ctxt_cost = compute_ctxt_costs(root, eg, &ex);
 
-    let mut matches: BTreeMap</*detour cost*/ usize, Vec<(/*rw id*/ usize, Id, Subst)>> = BTreeMap::default();
+    let mut matches: BTreeMap</*detour cost*/ usize, Vec<(/*rw id*/ usize, Id, Subst, /*ctxt_cost*/ usize, /*pat_cost*/ usize)>> = BTreeMap::default();
     for (rw_i, rw) in rws.iter().enumerate() {
         let lhs_pat = rw.searcher.get_pattern_ast().unwrap();
         let rhs_pat = rw.applier.get_pattern_ast().unwrap();
@@ -33,29 +33,33 @@ pub fn pat_detour_eqsat_step<L: Language + Display>(root: Id, rws: &[Rewrite<L, 
                 if Some(lhs) != rhs {
                     let pat_cost = pat_cost(lhs_pat, &subst, &ex);
                     // We don't subtract the root cost here, it's a constant offset, so why would we.
-                    let detour_cost = ctxt_cost[&lhs] + pat_cost;
+                    let cx_cost = ctxt_cost[&lhs];
+                    let detour_cost = cx_cost + pat_cost;
                     if !matches.contains_key(&detour_cost) {
                         matches.insert(detour_cost, Vec::new());
                     }
-                    matches.get_mut(&detour_cost).unwrap().push((rw_i, lhs, subst));
+                    matches.get_mut(&detour_cost).unwrap().push((rw_i, lhs, subst, cx_cost, pat_cost));
                 }
             }
         }
     }
 
-    let Some((_, new_apps)) = matches.into_iter().next() else { return /*saturated*/ };
+    let Some((full_cost, new_apps)) = matches.into_iter().next() else { return /*saturated*/ };
 
-    for (rw_i, lhs, subst) in &new_apps {
+    let root_cost = ex.find_best_cost(root);
+    for (rw_i, lhs, subst, cx_cost, pat_cost) in &new_apps {
         let rw = &rws[*rw_i];
 
         // Debugging info
         {
             println!("rule \"{}\": {} -> {}", rw.name, rw.searcher.get_pattern_ast().unwrap(), rw.applier.get_pattern_ast().unwrap());
             let ex = Extractor::new(&eg, AstSize);
+            println!("cx_cost = {cx_cost}, pat_cost = {pat_cost}, full_cost = {full_cost}, root_cost = {root_cost}");
             for v in rw.searcher.vars() {
                 let term = ex.find_best(subst[v]).1;
                 println!("  {v} = {term}");
             }
+            println!();
         }
 
         rw.applier.apply_one(eg, *lhs, subst, None, rw.name);
