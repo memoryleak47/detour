@@ -96,5 +96,5 @@ fn init_term2() -> String {
 }
 
 pub fn run_ex1() {
-    compare(&init_term2(), &rules());
+    compare(&init_term2(), &rules(), 4);
 }

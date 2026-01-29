@@ -83,5 +83,5 @@ fn init_term() -> String {
 }
 
 pub fn run_ex2() {
-    compare(&init_term(), &rules());
+    compare(&init_term(), &rules(), 3);
 }
