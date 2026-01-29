@@ -1,7 +1,7 @@
 use crate::*;
 use std::fmt::Display;
 
-pub fn eqsat_node_detour<L: Language + Display + FromOp>(init_term: &str, rws: &[Rewrite<L, ()>]) {
+pub fn eqsat_node_detour<L: Language + Display + FromOp>(init_term: &str, rws: &[Rewrite<L, ()>], stop_size: usize) {
     let st: RecExpr<L> = init_term.parse().unwrap();
     println!("Initial: {st}");
     let mut eg = EGraph::new(());
@@ -12,9 +12,11 @@ pub fn eqsat_node_detour<L: Language + Display + FromOp>(init_term: &str, rws: &
         node_detour_eqsat_step(i, rws, &mut eg);
 
         let ex = Extractor::new(&eg, AstSize);
-        println!("Detour Extracted: {}", ex.find_best(i).1);
+        let t = ex.find_best(i);
+        println!("Detour Extracted: {}", t.1);
+        println!("Total Size: {}", eg.total_size());
+        if t.0 <= stop_size { break }
     }
-    println!("Total Size: {}", eg.total_size());
 }
 
 // one iteration of eqsat governed by the detour system.
