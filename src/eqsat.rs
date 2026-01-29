@@ -31,9 +31,17 @@ pub fn detour_eqsat_iter<L: Language + Display>(root: Id, rws: &[Rewrite<L, ()>]
                     let rhs = lookup_pat(&rhs_pat, eg, &subst);
                     if Some(lhs) != rhs {
                         {
+                            println!("=====================================================================================================");
+                            println!();
+                            println!();
                             let ex = Extractor::new(&eg, AstSize);
                             // this prints the equations we have learned:
                             let subst_f = |v| ex.find_best(subst[v]).1;
+                            let lhs_vars = rw.searcher.vars();
+                            println!("    rule: {}", rw.name);
+                            for v in lhs_vars {
+                                println!("--- var({v}) = {}", ex.find_best(subst[v]).1);
+                            }
                             let lhs_t = pat_to_term(lhs_pat, &subst_f);
                             let rhs_t = pat_to_term(rhs_pat, &subst_f);
                             let node_cost = AstSize.cost(n, |k| ex.find_best_cost(k));
@@ -44,8 +52,11 @@ pub fn detour_eqsat_iter<L: Language + Display>(root: Id, rws: &[Rewrite<L, ()>]
                             println!("    root extract cost: {root_ex_cost}");
                             println!("    node extract cost: {node_cost}");
                             println!("    -> e-node detour cost: {cst}");
+                            println!();
                             println!("> {lhs_t}");
+                            println!();
                             println!("= {rhs_t};");
+                            println!();
                         }
                         new_apps.push((rw_i, lhs, subst));
                     }
