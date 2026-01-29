@@ -14,7 +14,7 @@ pub fn eqsat_detour<L: Language + Display + FromOp>(init_term: &str, rws: &[Rewr
     let i = eg.add_expr(&st);
 
     eg.rebuild();
-    for _ in 0..7 {
+    for _ in 0..70 {
         detour_eqsat_iter(i, rws, &mut eg);
 
         let ex = Extractor::new(&eg, AstSize);

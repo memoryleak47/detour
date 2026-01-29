@@ -24,5 +24,5 @@ pub use minqueue::*;
 
 
 fn main() {
-    run_ex1();
+    run_ex2();
 }

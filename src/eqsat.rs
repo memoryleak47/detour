@@ -15,11 +15,12 @@ fn subpat_to_term<L: Language>(id: Id, p: &PatternAst<L>, subst: &impl Fn(Var) -
 }
 
 // one iteration of eqsat governed by the detour system.
-pub fn detour_eqsat_iter<L: Language + Display>(id: Id, rws: &[Rewrite<L, ()>], eg: &mut EGraph<L, ()>) {
-    let dd = compute_detour_costs(id, eg);
+pub fn detour_eqsat_iter<L: Language + Display>(root: Id, rws: &[Rewrite<L, ()>], eg: &mut EGraph<L, ()>) {
+    let (ex, ctxt_cost, dd) = compute_detour_costs(root, eg);
 
     let mut new_apps: Vec<(/*rw index*/ usize, /*lhs*/ Id, Subst)> = Vec::new();
 
+    let root_ex_cost = ex.find_best(root).0;
     for (cst, x) in &dd {
         for n in x {
             let lhs = eg.lookup(&mut n.clone()).unwrap();
@@ -30,12 +31,19 @@ pub fn detour_eqsat_iter<L: Language + Display>(id: Id, rws: &[Rewrite<L, ()>], 
                     let rhs = lookup_pat(&rhs_pat, eg, &subst);
                     if Some(lhs) != rhs {
                         {
+                            let ex = Extractor::new(&eg, AstSize);
                             // this prints the equations we have learned:
-                            let ex = Extractor::new(eg, AstSize);
                             let subst_f = |v| ex.find_best(subst[v]).1;
                             let lhs_t = pat_to_term(lhs_pat, &subst_f);
                             let rhs_t = pat_to_term(rhs_pat, &subst_f);
-                            println!("cost: {cst},");
+                            let node_cost = AstSize.cost(n, |k| ex.find_best_cost(k));
+
+                            let lhs_ctxt_cost = ctxt_cost[&lhs];
+                            assert!(*cst == lhs_ctxt_cost + node_cost - root_ex_cost);
+                            println!("    class ctxt cost: {lhs_ctxt_cost}");
+                            println!("    root extract cost: {root_ex_cost}");
+                            println!("    node extract cost: {node_cost}");
+                            println!("    -> e-node detour cost: {cst}");
                             println!("> {lhs_t}");
                             println!("= {rhs_t};");
                         }

@@ -29,7 +29,7 @@ fn compute_ctxt_costs<L: Language>(root: Id, eg: &EGraph<L, ()>, ex: &Extractor<
     ctxt_cost
 }
 
-pub fn compute_detour_costs<L: Language>(root: Id, eg: &EGraph<L, ()>) -> BTreeMap<usize, Vec<L>> {
+pub fn compute_detour_costs<L: Language>(root: Id, eg: &EGraph<L, ()>) -> (Extractor<AstSize, L, ()>, HashMap<Id, usize>, BTreeMap<usize, Vec<L>>) {
     let ex = Extractor::new(eg, AstSize);
     let ctxt_cost = compute_ctxt_costs(root, eg, &ex);
 
@@ -48,5 +48,5 @@ pub fn compute_detour_costs<L: Language>(root: Id, eg: &EGraph<L, ()>) -> BTreeM
         }
     }
 
-    dd
+    (ex, ctxt_cost, dd)
 }
