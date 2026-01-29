@@ -20,7 +20,7 @@ pub fn detour_eqsat_iter<L: Language + Display>(root: Id, rws: &[Rewrite<L, ()>]
 
     let mut new_apps: Vec<(/*rw index*/ usize, /*lhs*/ Id, Subst)> = Vec::new();
 
-    let root_ex_cost = ex.find_best(root).0;
+    let root_ex_cost = ex.find_best_cost(root);
     for (cst, x) in &dd {
         for n in x {
             let lhs = eg.lookup(&mut n.clone()).unwrap();
