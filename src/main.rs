@@ -13,12 +13,11 @@ pub use ex1::*;
 mod ex2;
 pub use ex2::*;
 
-mod minqueue;
-pub use minqueue::*;
+mod ctxt_cost;
+pub use ctxt_cost::*;
 
 mod node_detour;
 pub use node_detour::*;
-
 
 fn main() {
     run_ex2();

@@ -1,6 +1,28 @@
 use crate::*;
 use std::fmt::Display;
 
+pub fn compute_detour_costs<L: Language>(root: Id, eg: &EGraph<L, ()>) -> (Extractor<AstSize, L, ()>, HashMap<Id, usize>, BTreeMap<usize, Vec<L>>) {
+    let ex = Extractor::new(eg, AstSize);
+    let ctxt_cost = compute_ctxt_costs(root, eg, &ex);
+
+    let mut dd: BTreeMap<usize, Vec<L>> = Default::default();
+    let opt_cost = ex.find_best_cost(root);
+    for cc in eg.classes() {
+        for n in &eg[cc.id].nodes {
+            let cl = eg.lookup(&mut n.clone()).unwrap();
+            let class_ctxt_cost = ctxt_cost[&cl];
+            let node_cost = AstSize.cost(n, |k| ex.find_best_cost(k));
+            let det = class_ctxt_cost + node_cost - opt_cost;
+            if !dd.contains_key(&det) {
+                dd.insert(det, Vec::new());
+            }
+            dd.get_mut(&det).unwrap().push(n.clone());
+        }
+    }
+
+    (ex, ctxt_cost, dd)
+}
+
 fn pat_to_term<L: Language>(p: &PatternAst<L>, subst: &impl Fn(Var) -> RecExpr<L>) -> RecExpr<L> {
     subpat_to_term(Id::from(p.len() - 1), p, subst)
 }
