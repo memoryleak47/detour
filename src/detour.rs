@@ -4,14 +4,12 @@ pub fn compute_detour_costs<L: Language>(id: Id, eg: &EGraph<L, ()>) -> BTreeMap
     let ex = Extractor::new(eg, AstSize);
     let mut ctxt_cost = HashMap::new();
 
-    // as this queue is a max-heap, we'll store usize::MAX - ctxt_cost in the usize of queue.
-    let mut queue: BinaryHeap<(usize, Id)> = BinaryHeap::new();
+    let mut queue: MinPrioQueue<usize, Id> = MinPrioQueue::new();
 
     // initial
-    queue.push((usize::MAX - 0, id));
+    queue.push(0, id);
 
     while let Some((cst, i)) = queue.pop() {
-        let cst = usize::MAX - cst;
         if ctxt_cost.contains_key(&i) { continue }
         ctxt_cost.insert(i, cst);
         for e in &eg[i].nodes {
@@ -24,7 +22,7 @@ pub fn compute_detour_costs<L: Language>(id: Id, eg: &EGraph<L, ()>) -> BTreeMap
 
                 let c_cost = ex.find_best_cost(c);
                 let ncst = e_cost + cst - c_cost;
-                queue.push((usize::MAX - ncst, c));
+                queue.push(ncst, c);
             }
         }
     }

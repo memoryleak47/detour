@@ -19,6 +19,9 @@ pub use ex1::*;
 mod ex2;
 pub use ex2::*;
 
+mod minqueue;
+pub use minqueue::*;
+
 
 fn main() {
     run_ex1();
