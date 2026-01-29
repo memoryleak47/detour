@@ -42,6 +42,9 @@ fn rules() -> Vec<Rewrite<Math, ()>> {
         rewrite!("neg_def1"; "(- ?a)" => "(* ?a (- one))"),
         rewrite!("neg_def2"; "(* ?a (- one))" => "(- ?a)"),
 
+        rewrite!("mul_neg";  "(* (- ?a) ?b)" => "(- (* ?a ?b))"),
+        rewrite!("mul_neg_"; "(- (* ?a ?b))" => "(* (- ?a) ?b)"),
+
         rewrite!("neutral1";  "(/ one)" => "one"),
         rewrite!("neutral1_"; "one" => "(/ one)"),
 
