@@ -46,7 +46,19 @@ pub fn pat_detour_eqsat_step<L: Language + Display>(root: Id, rws: &[Rewrite<L, 
     let Some((_, new_apps)) = matches.into_iter().next() else { return /*saturated*/ };
 
     for (rw_i, lhs, subst) in &new_apps {
-        rws[*rw_i].applier.apply_one(eg, *lhs, subst, None, rws[*rw_i].name);
+        let rw = &rws[*rw_i];
+
+        // Debugging info
+        {
+            println!("rule \"{}\": {} -> {}", rw.name, rw.searcher.get_pattern_ast().unwrap(), rw.applier.get_pattern_ast().unwrap());
+            let ex = Extractor::new(&eg, AstSize);
+            for v in rw.searcher.vars() {
+                let term = ex.find_best(subst[v]).1;
+                println!("  {v} = {term}");
+            }
+        }
+
+        rw.applier.apply_one(eg, *lhs, subst, None, rw.name);
     }
 
     eg.rebuild();
