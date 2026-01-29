@@ -1,5 +1,8 @@
 use crate::*;
 
+mod eqsat;
+pub use eqsat::*;
+
 fn compute_ctxt_costs<L: Language>(root: Id, eg: &EGraph<L, ()>, ex: &Extractor<AstSize, L, ()>) -> HashMap<Id, usize> {
     let mut ctxt_cost = HashMap::new();
 
