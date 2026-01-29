@@ -1,13 +1,12 @@
 use crate::*;
 
-pub fn compute_detour_costs<L: Language>(id: Id, eg: &EGraph<L, ()>) -> BTreeMap<usize, Vec<L>> {
-    let ex = Extractor::new(eg, AstSize);
+fn compute_ctxt_costs<L: Language>(root: Id, eg: &EGraph<L, ()>, ex: &Extractor<AstSize, L, ()>) -> HashMap<Id, usize> {
     let mut ctxt_cost = HashMap::new();
 
     let mut queue: MinPrioQueue<usize, Id> = MinPrioQueue::new();
 
     // initial
-    queue.push(0, id);
+    queue.push(0, root);
 
     while let Some((cst, i)) = queue.pop() {
         if ctxt_cost.contains_key(&i) { continue }
@@ -27,8 +26,15 @@ pub fn compute_detour_costs<L: Language>(id: Id, eg: &EGraph<L, ()>) -> BTreeMap
         }
     }
 
+    ctxt_cost
+}
+
+pub fn compute_detour_costs<L: Language>(root: Id, eg: &EGraph<L, ()>) -> BTreeMap<usize, Vec<L>> {
+    let ex = Extractor::new(eg, AstSize);
+    let ctxt_cost = compute_ctxt_costs(root, eg, &ex);
+
     let mut dd: BTreeMap<usize, Vec<L>> = Default::default();
-    let opt_cost = ex.find_best_cost(id);
+    let opt_cost = ex.find_best_cost(root);
     for cc in eg.classes() {
         for n in &eg[cc.id].nodes {
             let cl = eg.lookup(&mut n.clone()).unwrap();
