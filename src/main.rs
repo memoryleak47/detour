@@ -23,6 +23,7 @@ mod node_detour;
 pub use node_detour::*;
 
 mod pat_detour;
+pub use pat_detour::*;
 
 fn main() {
     run_ex2();
