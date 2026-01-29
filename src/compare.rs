@@ -2,12 +2,12 @@ use crate::*;
 use std::fmt::Display;
 
 pub fn compare<L: Language + Display + FromOp>(init_term: &str, rws: &[Rewrite<L, ()>]) {
-    eqsat_detour(init_term, rws);
+    eqsat_node_detour(init_term, rws);
     println!("------------------------------");
     eqsat_normal(init_term, rws);
 }
 
-pub fn eqsat_detour<L: Language + Display + FromOp>(init_term: &str, rws: &[Rewrite<L, ()>]) {
+pub fn eqsat_node_detour<L: Language + Display + FromOp>(init_term: &str, rws: &[Rewrite<L, ()>]) {
     let st: RecExpr<L> = init_term.parse().unwrap();
     println!("Initial: {st}");
     let mut eg = EGraph::new(());
@@ -15,7 +15,7 @@ pub fn eqsat_detour<L: Language + Display + FromOp>(init_term: &str, rws: &[Rewr
 
     eg.rebuild();
     for _ in 0..70 {
-        detour_eqsat_iter(i, rws, &mut eg);
+        node_detour_eqsat_step(i, rws, &mut eg);
 
         let ex = Extractor::new(&eg, AstSize);
         println!("Detour Extracted: {}", ex.find_best(i).1);

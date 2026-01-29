@@ -1,43 +1,8 @@
 use crate::*;
 use std::fmt::Display;
 
-pub fn compute_detour_costs<L: Language>(root: Id, eg: &EGraph<L, ()>) -> (Extractor<AstSize, L, ()>, HashMap<Id, usize>, BTreeMap<usize, Vec<L>>) {
-    let ex = Extractor::new(eg, AstSize);
-    let ctxt_cost = compute_ctxt_costs(root, eg, &ex);
-
-    let mut dd: BTreeMap<usize, Vec<L>> = Default::default();
-    let opt_cost = ex.find_best_cost(root);
-    for cc in eg.classes() {
-        for n in &eg[cc.id].nodes {
-            let cl = eg.lookup(&mut n.clone()).unwrap();
-            let class_ctxt_cost = ctxt_cost[&cl];
-            let node_cost = AstSize.cost(n, |k| ex.find_best_cost(k));
-            let det = class_ctxt_cost + node_cost - opt_cost;
-            if !dd.contains_key(&det) {
-                dd.insert(det, Vec::new());
-            }
-            dd.get_mut(&det).unwrap().push(n.clone());
-        }
-    }
-
-    (ex, ctxt_cost, dd)
-}
-
-fn pat_to_term<L: Language>(p: &PatternAst<L>, subst: &impl Fn(Var) -> RecExpr<L>) -> RecExpr<L> {
-    subpat_to_term(Id::from(p.len() - 1), p, subst)
-}
-
-fn subpat_to_term<L: Language>(id: Id, p: &PatternAst<L>, subst: &impl Fn(Var) -> RecExpr<L>) -> RecExpr<L> {
-    match &p[id] {
-        ENodeOrVar::Var(v) => subst(*v),
-        ENodeOrVar::ENode(n) => {
-            n.join_recexprs(|i| subpat_to_term(i, p, subst))
-        },
-    }
-}
-
 // one iteration of eqsat governed by the detour system.
-pub fn detour_eqsat_iter<L: Language + Display>(root: Id, rws: &[Rewrite<L, ()>], eg: &mut EGraph<L, ()>) {
+pub fn node_detour_eqsat_step<L: Language + Display>(root: Id, rws: &[Rewrite<L, ()>], eg: &mut EGraph<L, ()>) {
     let (ex, ctxt_cost, dd) = compute_detour_costs(root, eg);
 
     let mut new_apps: Vec<(/*rw index*/ usize, /*lhs*/ Id, Subst)> = Vec::new();
@@ -97,17 +62,25 @@ pub fn detour_eqsat_iter<L: Language + Display>(root: Id, rws: &[Rewrite<L, ()>]
     }
 }
 
-fn lookup_pat<L: Language>(pat: &PatternAst<L>, eg: &EGraph<L, ()>, subst: &Subst) -> Option<Id> {
-    let mut vec = Vec::new();
-    for i in 0..pat.len() {
-        match &pat[i.into()] {
-            ENodeOrVar::ENode(n) => {
-                let mut n = n.clone().map_children(|k| vec[usize::from(k)]);
-                let k = eg.lookup(&mut n)?;
-                vec.push(k);
-            },
-            ENodeOrVar::Var(v) => vec.push(subst[*v]),
+fn compute_detour_costs<L: Language>(root: Id, eg: &EGraph<L, ()>) -> (Extractor<AstSize, L, ()>, HashMap<Id, usize>, BTreeMap<usize, Vec<L>>) {
+    let ex = Extractor::new(eg, AstSize);
+    let ctxt_cost = compute_ctxt_costs(root, eg, &ex);
+
+    let mut dd: BTreeMap<usize, Vec<L>> = Default::default();
+    let opt_cost = ex.find_best_cost(root);
+    for cc in eg.classes() {
+        for n in &eg[cc.id].nodes {
+            let cl = eg.lookup(&mut n.clone()).unwrap();
+            let class_ctxt_cost = ctxt_cost[&cl];
+            let node_cost = AstSize.cost(n, |k| ex.find_best_cost(k));
+            let det = class_ctxt_cost + node_cost - opt_cost;
+            if !dd.contains_key(&det) {
+                dd.insert(det, Vec::new());
+            }
+            dd.get_mut(&det).unwrap().push(n.clone());
         }
     }
-    vec.last().copied()
+
+    (ex, ctxt_cost, dd)
 }
+
