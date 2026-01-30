@@ -19,12 +19,20 @@ pub fn eqsat_pat_detour<L: Language + Display + FromOp>(init_term: &str, rws: &[
     }
 }
 
+use std::sync::atomic::{AtomicUsize, Ordering};
+static CTR: AtomicUsize = AtomicUsize::new(0);
+
 pub fn pat_detour_eqsat_step<L: Language + Display>(root: Id, rws: &[Rewrite<L, ()>], eg: &mut EGraph<L, ()>) {
+    CTR.fetch_add(1, Ordering::SeqCst);
     let ex = Extractor::new(&eg, AstSize);
     let ctxt_cost = compute_ctxt_costs(root, eg, &ex);
 
     let mut matches: BTreeMap</*detour cost*/ usize, Vec<(/*rw id*/ usize, Id, Subst, /*ctxt_cost*/ usize, /*pat_cost*/ usize)>> = BTreeMap::default();
     for (rw_i, rw) in rws.iter().enumerate() {
+        // to be a bit similar to the backoff scheduler.
+        if (&rw.name.to_string() == "ass" || &rw.name.to_string() == "clos") && CTR.load(Ordering::SeqCst) % 5 != 0 {
+            continue
+        }
         let lhs_pat = rw.searcher.get_pattern_ast().unwrap();
         let rhs_pat = rw.applier.get_pattern_ast().unwrap();
 
