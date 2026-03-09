@@ -57,7 +57,7 @@ pub fn pat_detour_eqsat_step<L: Language + Display>(c: usize, root: Id, rws: &[R
         let rw = &rws[*rw_i];
 
         // Debugging info
-        {
+        if false {
             // println!("rule \"{}\": {} -> {}", rw.name, rw.searcher.get_pattern_ast().unwrap(), rw.applier.get_pattern_ast().unwrap());
             let ex = Extractor::new(&eg, AstSize);
             println!("cx_cost = {cx_cost:02}, pat_cost = {pat_cost:02}, full_cost = {full_cost:02}, root_cost = {root_cost:02}");
