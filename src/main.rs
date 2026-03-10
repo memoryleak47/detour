@@ -26,5 +26,5 @@ mod pat_detour;
 pub use pat_detour::*;
 
 fn main() {
-    run_ex1();
+    run_ex2();
 }
