@@ -64,10 +64,9 @@ fn rules() -> Vec<Rewrite<Math, ()>> {
     ]
 }
 
-fn init_term() -> String {
+fn complex_zero(n: usize) -> String {
     let mut s = String::from("zero");
     let mut v = Vec::new();
-    let n = 10;
     for i in 0..n {
         let j = (i+n/2)%n;
         v.push(format!("a{i}"));
@@ -79,7 +78,21 @@ fn init_term() -> String {
     s
 }
 
-fn init_term2() -> String {
+fn big_term() -> String {
+    let mut s = String::from("zero");
+    let mut v = Vec::new();
+    let n = 100;
+    for i in 0..n {
+        let j = (i+n/2)%n;
+        v.push(format!("b{i}"));
+    }
+    for x in v {
+        s = format!("(+ {s} {x})");
+    }
+    s
+}
+
+fn random_term() -> String {
     use rand::{SeedableRng, rngs::StdRng};
 
     let mut rng = StdRng::from_seed([9u8; 32]);
@@ -90,6 +103,12 @@ fn init_term2() -> String {
     s
 }
 
+fn init_term3() -> String {
+    let zero = complex_zero(5);
+    let big = big_term();
+    format!("(+ {zero} (* zero {big})))")
+}
+
 pub fn run_ex1() {
-    compare(&init_term2(), &rules(), 4);
+    compare(&init_term3(), &rules(), 1);
 }
