@@ -5,7 +5,6 @@ define_language! {
         "+" = Add([Id; 2]),
         "-" = Sub([Id; 1]),
         "*" = Mul([Id; 2]),
-        "/" = Div([Id; 1]),
         Symbol(Symbol),
     }
 }
