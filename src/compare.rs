@@ -20,7 +20,7 @@ pub fn eqsat_normal<L: Language + Display + FromOp>(init_term: &str, rws: &[Rewr
             .with_expr(&st)
             // .with_scheduler(SimpleScheduler)
             .with_node_limit(1_000_000)
-            .with_iter_limit(40)
+            .with_iter_limit(400)
             .with_hook(move |r| {
                 let ex = Extractor::new(&r.egraph, AstSize);
                 if ex.find_best_cost(r.roots[0]) <= stop_size { return Err(format!("reached stop size!")) }

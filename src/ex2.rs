@@ -72,7 +72,7 @@ fn pred(n: &str) -> String {
 
 fn init_term() -> String {
     let mut x = zero();
-    let k = 2;
+    let k = 5;
     for _ in 0..k {
         x = suc(&x);
     }
