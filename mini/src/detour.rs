@@ -1,9 +1,52 @@
-use egg::{Id, EGraph, Language, Extractor, AstSize, FromOp, RecExpr, Rewrite, Subst, ENodeOrVar, PatternAst, CostFunction, Analysis, Runner};
+use egg::{Id, EGraph, Language, Extractor, AstSize, FromOp, RecExpr, Rewrite, Subst, ENodeOrVar, PatternAst, CostFunction, Analysis, Runner, Report, StopReason};
 
 use std::fmt::Display;
-use std::time::Instant;
+use std::time::{Duration, Instant};
 
-pub fn detour_step<L: Language, N: Analysis<L> + Default>(i: usize, roots: &[Id], rws: &[Rewrite<L, N>], eg: &mut EGraph<L, N>, stop: Instant, node_limit: usize) {
+type Hook<L, N> = Box<dyn FnMut(&EGraph<L, N>) -> Result<(), String>>;
+
+pub fn detour_run<L: Language, N: Analysis<L> + Default>(roots: &[Id], rws: &[Rewrite<L, N>], eg: &mut EGraph<L, N>, hooks: &mut [Hook<L, N>], time_limit: Duration, node_limit: usize) -> Report {
+    let mut report = Runner::<L, ()>::new(()).run(&[]).report();
+    let start = Instant::now();
+    let stop = start + time_limit;
+
+    let mut i = 0;
+    'outer: loop {
+        if eg.total_size() > node_limit { report.stop_reason = StopReason::NodeLimit(eg.total_size()); break }
+        if Instant::now() > stop { report.stop_reason = StopReason::TimeLimit(start.elapsed().as_secs_f64()); break }
+
+        detour_step(i, roots, rws, eg, stop, node_limit);
+
+        if eg.total_size() > node_limit { report.stop_reason = StopReason::NodeLimit(eg.total_size()); break }
+        if Instant::now() > stop { report.stop_reason = StopReason::TimeLimit(start.elapsed().as_secs_f64()); break }
+
+        for h in hooks.iter_mut() {
+            if let Err(s) = h(eg) {
+                report.stop_reason = StopReason::Other(s);
+                break 'outer;
+            }
+        }
+        i += 1;
+    }
+
+    report.total_time = start.elapsed().as_secs_f64();
+
+    report.iterations = i;
+    // report.stop_reason is set upon "break"
+    report.egraph_nodes = eg.total_number_of_nodes();
+    report.egraph_classes = eg.number_of_classes();
+    report.memo_size = eg.total_size();
+
+    // unknown
+    report.rebuilds = 0;
+    report.search_time = 0.0;
+    report.apply_time = 0.0;
+    report.rebuild_time = 0.0;
+
+    report
+}
+
+fn detour_step<L: Language, N: Analysis<L> + Default>(i: usize, roots: &[Id], rws: &[Rewrite<L, N>], eg: &mut EGraph<L, N>, stop: Instant, node_limit: usize) {
     if i%2 == 0 {
         pat_detour_eqsat_step(roots, rws, eg, stop, node_limit);
     } else {
@@ -163,4 +206,3 @@ impl<U: Ord, T: Eq> Ord for WithOrdRev<U, T> {
         self.partial_cmp(&other).unwrap()
     }
 }
-
