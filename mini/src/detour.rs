@@ -6,33 +6,35 @@ use std::time::{Duration, Instant};
 type Hook<L, N> = Box<dyn FnMut(&EGraph<L, N>) -> Result<(), String>>;
 
 pub fn detour_run<L: Language, N: Analysis<L> + Default>(roots: &[Id], rws: &[Rewrite<L, N>], eg: &mut EGraph<L, N>, hooks: &mut [Hook<L, N>], time_limit: Duration, node_limit: usize) -> Report {
-    let mut report = Runner::<L, ()>::new(()).run(&[]).report();
+    let mut stop_reason = StopReason::Saturated;
+
     let start = Instant::now();
     let stop = start + time_limit;
 
     let mut i = 0;
     'outer: loop {
-        if eg.total_size() > node_limit { report.stop_reason = StopReason::NodeLimit(eg.total_size()); break }
-        if Instant::now() > stop { report.stop_reason = StopReason::TimeLimit(start.elapsed().as_secs_f64()); break }
+        if eg.total_size() > node_limit { stop_reason = StopReason::NodeLimit(eg.total_size()); break }
+        if Instant::now() > stop { stop_reason = StopReason::TimeLimit(start.elapsed().as_secs_f64()); break }
 
         detour_step(i, roots, rws, eg, stop, node_limit);
 
-        if eg.total_size() > node_limit { report.stop_reason = StopReason::NodeLimit(eg.total_size()); break }
-        if Instant::now() > stop { report.stop_reason = StopReason::TimeLimit(start.elapsed().as_secs_f64()); break }
+        if eg.total_size() > node_limit { stop_reason = StopReason::NodeLimit(eg.total_size()); break }
+        if Instant::now() > stop { stop_reason = StopReason::TimeLimit(start.elapsed().as_secs_f64()); break }
 
         for h in hooks.iter_mut() {
-            if let Err(s) = h(eg) {
-                report.stop_reason = StopReason::Other(s);
-                break 'outer;
-            }
+            if let Err(s) = h(eg) { stop_reason = StopReason::Other(s); break 'outer; }
         }
         i += 1;
     }
 
-    report.total_time = start.elapsed().as_secs_f64();
+    let total_time = start.elapsed().as_secs_f64();
+
+    let mut report = Runner::<L, ()>::new(()).run(&[]).report();
+
+    report.stop_reason = stop_reason;
+    report.total_time = total_time;
 
     report.iterations = i;
-    // report.stop_reason is set upon "break"
     report.egraph_nodes = eg.total_number_of_nodes();
     report.egraph_classes = eg.number_of_classes();
     report.memo_size = eg.total_size();
