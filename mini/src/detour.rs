@@ -5,7 +5,7 @@ use std::time::{Duration, Instant};
 
 type Hook<L, N> = Box<dyn FnMut(&EGraph<L, N>) -> Result<(), String>>;
 type RewriteId = usize;
-type Cost = u64;
+type Cost = u128;
 
 pub const OFFSET: Cost = 3;
 pub const UNREACHABLE_COST: Cost = 100000000;
