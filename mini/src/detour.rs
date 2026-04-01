@@ -34,7 +34,7 @@ pub fn detour_run<L: Language, N: Analysis<L> + Default>(roots: &[Id], rws: &[Re
             if let Err(sr) = stopper.check_limits(eg) { stop_reason = sr; break 'outer }
         }
 
-        if let Err(sr) = detour_step(i, all_matches, roots, rws, eg, &stopper, cf, cfg_offset, cfg_unreachable_cost, &mut stop_reason) {
+        if let Err(sr) = detour_step(i, all_matches, roots, rws, eg, &stopper, cf, cfg_offset, cfg_unreachable_cost) {
             stop_reason = sr; break
         }
 
@@ -67,7 +67,7 @@ pub fn detour_run<L: Language, N: Analysis<L> + Default>(roots: &[Id], rws: &[Re
     report
 }
 
-fn detour_step<L: Language, N: Analysis<L> + Default>(i: usize, matches: Vec<Vec<SearchMatches<L>>>, roots: &[Id], rws: &[Rewrite<L, N>], eg: &mut EGraph<L, N>, stopper: &Stopper, cf: fn(&L) -> Cost, cfg_offset: Cost, cfg_unreachable_cost: Cost, stop_reason: &mut StopReason) -> Result<(), StopReason> {
+fn detour_step<L: Language, N: Analysis<L> + Default>(i: usize, matches: Vec<Vec<SearchMatches<L>>>, roots: &[Id], rws: &[Rewrite<L, N>], eg: &mut EGraph<L, N>, stopper: &Stopper, cf: fn(&L) -> Cost, cfg_offset: Cost, cfg_unreachable_cost: Cost) -> Result<(), StopReason> {
     if i%2 == 1 {
         for (v, rw) in matches.into_iter().zip(rws) {
             rw.applier.apply_matches(eg, &v, rw.name);
@@ -78,10 +78,10 @@ fn detour_step<L: Language, N: Analysis<L> + Default>(i: usize, matches: Vec<Vec
         return Ok(());
     }
 
-    pat_detour_eqsat_step(roots, matches, rws, eg, stopper, cf, cfg_offset, cfg_unreachable_cost, stop_reason)
+    pat_detour_eqsat_step(roots, matches, rws, eg, stopper, cf, cfg_offset, cfg_unreachable_cost)
 }
 
-fn pat_detour_eqsat_step<L: Language, N: Analysis<L>>(roots: &[Id], all_matches: Vec<Vec<SearchMatches<L>>>, rws: &[Rewrite<L, N>], eg: &mut EGraph<L, N>, stopper: &Stopper, cf: fn(&L) -> Cost, cfg_offset: Cost, cfg_unreachable_cost: Cost, stop_reason: &mut StopReason) -> Result<(), StopReason> {
+fn pat_detour_eqsat_step<L: Language, N: Analysis<L>>(roots: &[Id], all_matches: Vec<Vec<SearchMatches<L>>>, rws: &[Rewrite<L, N>], eg: &mut EGraph<L, N>, stopper: &Stopper, cf: fn(&L) -> Cost, cfg_offset: Cost, cfg_unreachable_cost: Cost) -> Result<(), StopReason> {
     let ex = Extractor::new(&eg, AdditiveCostFn(cf));
     let ctxt_cost = compute_ctxt_costs(roots, eg, &ex, cf);
 
