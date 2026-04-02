@@ -3,7 +3,7 @@ use egg::{Id, EGraph, Language, Extractor, FromOp, RecExpr, Rewrite, Subst, ENod
 use std::fmt::Display;
 use std::time::{Duration, Instant};
 
-pub type Hook<L, N> = Box<dyn FnMut(&EGraph<L, N>) -> Result<(), String>>;
+pub type Hook<L, N> = Box<dyn FnMut(&mut EGraph<L, N>) -> Result<(), String>>;
 type RewriteId = usize;
 type Cost = u128;
 
