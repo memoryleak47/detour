@@ -126,13 +126,16 @@ fn pat_detour_eqsat_step<L: Language, N: Analysis<L>>(i: usize, roots: &[Id], rw
     let mut found_cost = None;
 
     'outer: for (full_cost, new_apps) in matches {
-        if let Some(found) = found_cost { if full_cost > found + cfg_offset { break } }
+        let behind_threshold = if let Some(found) = found_cost { full_cost > found + cfg_offset } else { false };
         for (rw_i, lhs, subst) in &new_apps {
             let rw = &rws[*rw_i];
-            let pat_ast = rw.searcher.get_pattern_ast();
-            rw.applier.apply_one(eg, *lhs, subst, pat_ast, rw.name);
-            if eg_data(eg) != og_data && found_cost.is_none() { found_cost = Some(full_cost); }
-
+            let searcher_pat = rw.searcher.get_pattern_ast();
+            let applier_pat = rw.applier.get_pattern_ast();
+            let apply_found = if let Some(pat) = applier_pat { lookup_pat(pat, eg, subst).is_some() } else { false };
+            if !behind_threshold || apply_found {
+                rw.applier.apply_one(eg, *lhs, subst, searcher_pat, rw.name);
+                if eg_data(eg) != og_data && found_cost.is_none() { found_cost = Some(full_cost); }
+            }
             stopper.check_limits(eg)?;
         }
     }
